@@ -8,6 +8,12 @@ Developed by **Eren Ata** at the **Extended Reality Laboratory (XRLab), Manisa C
 
 [Download the model](https://huggingface.co/ErenAta00/Maverick-4B-Unity-XR-Agent-GGUF/resolve/856bd7b345f9b74ff871fa6c0bfe0d2432b1247f/Maverick-4B-Unity-XR-Agent-Q4_K_M.gguf?download=true) · [Model card](https://huggingface.co/ErenAta00/Maverick-4B-Unity-XR-Agent-GGUF) · [Training and evaluation article](https://huggingface.co/blog/ErenAta00/maverick-4b-unity-xr-agent)
 
+## Demo
+
+[![Maverick highlights a vase in a Unity kitchen scene](Documentation~/demo.jpg)](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4)
+
+[Open the 30-second demo](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4) (MP4, 7 MB). It shows English commands for highlighting objects, moving between rooms, and interacting with the scene.
+
 ## What is included
 
 This repository contains the Unity Package Manager package, editor setup tools, a desktop chat interface, and the code that manages the local model server. The **Maverick-4B-Unity-XR-Agent** weights are distributed separately on Hugging Face as a 2.50 GB Q4_K_M GGUF file. llama.cpp is also downloaded separately.
