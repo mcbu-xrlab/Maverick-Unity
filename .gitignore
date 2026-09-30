@@ -1,0 +1,27 @@
+# Model weights and inference binaries are distributed separately.
+*.gguf
+*.safetensors
+*.exe
+*.dll
+*.pdb
+# Unity development project output.
+/Library/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+/Assets/StreamingAssets/SceneAgent/
+# Local editor files and generated reports.
+.vs/
+.idea/
+.DS_Store
+Thumbs.db
+*.csproj
+*.sln
+*.user
+*.log
+/SceneAgentRuns/
+/SceneAgentSessions/

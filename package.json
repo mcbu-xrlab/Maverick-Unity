@@ -1,0 +1,31 @@
+{
+  "name": "com.mcbuxrlab.maverick",
+  "version": "1.0.0",
+  "displayName": "Maverick XR Agent",
+  "unity": "2022.3",
+  "description": "Run Maverick locally in Unity to turn English text or speech transcripts into scene actions. Includes llama.cpp server management, tool execution, clarification handling, and editor setup tools. Model weights are downloaded separately from Hugging Face.",
+  "keywords": [
+    "maverick",
+    "llm",
+    "voice control",
+    "natural language",
+    "xr",
+    "vr",
+    "offline",
+    "llama.cpp",
+    "agent",
+    "tool calling"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Eren Ata, MCBU XRLab",
+    "url": "https://huggingface.co/ErenAta00"
+  },
+  "documentationUrl": "https://github.com/ErenAta16/Maverick-Unity#readme",
+  "changelogUrl": "https://github.com/ErenAta16/Maverick-Unity/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/ErenAta16/Maverick-Unity/blob/main/LICENSE.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ErenAta16/Maverick-Unity.git"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "SceneAgent.Runtime",
+  "rootNamespace": "SceneAgent",
+  "references": [],
+  "autoReferenced": true
+}

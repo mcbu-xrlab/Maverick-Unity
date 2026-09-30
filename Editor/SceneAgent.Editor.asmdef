@@ -1,0 +1,7 @@
+{
+  "name": "SceneAgent.Editor",
+  "rootNamespace": "SceneAgent",
+  "references": ["SceneAgent.Runtime"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}
