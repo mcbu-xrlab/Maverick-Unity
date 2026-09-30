@@ -12,8 +12,6 @@ Developed by **Eren Ata** at the **Extended Reality Laboratory (XRLab), Manisa C
 
 [![Looping demo of Maverick interacting with Unity scenes](Documentation~/demo.webp)](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4)
 
-The preview loops without sound. [Open the full 30-second video](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4) (1080p MP4, 7 MB) to see English commands for highlighting objects, moving between rooms, and interacting with the scene.
-
 ## What is included
 
 This repository contains the Unity Package Manager package, editor setup tools, a desktop chat interface, and the code that manages the local model server. The **Maverick-4B-Unity-XR-Agent** weights are distributed separately on Hugging Face as a 2.50 GB Q4_K_M GGUF file. llama.cpp is also downloaded separately.
