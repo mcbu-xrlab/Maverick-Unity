@@ -10,9 +10,9 @@ Developed by **Eren Ata** at the **Extended Reality Laboratory (XRLab), Manisa C
 
 ## Demo
 
-[![Maverick highlights a vase in a Unity kitchen scene](Documentation~/demo.jpg)](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4)
+[![Looping demo of Maverick interacting with Unity scenes](Documentation~/demo.webp)](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4)
 
-[Open the 30-second demo](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4) (MP4, 7 MB). It shows English commands for highlighting objects, moving between rooms, and interacting with the scene.
+The preview loops without sound. [Open the full 30-second video](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4) (1080p MP4, 7 MB) to see English commands for highlighting objects, moving between rooms, and interacting with the scene.
 
 ## What is included
 
