@@ -10,7 +10,7 @@ Developed by **Eren Ata** at the **Extended Reality Laboratory (XRLab), Manisa C
 
 ## Demo
 
-[![Looping demo of Maverick interacting with Unity scenes](Documentation~/demo.webp)](https://github.com/ErenAta16/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4)
+[![Looping demo of Maverick interacting with Unity scenes](Documentation~/demo.webp)](https://github.com/mcbu-xrlab/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4)
 
 ## What is included
 
@@ -43,7 +43,7 @@ Testing was carried out on Windows 11 with an RTX 3050 Ti laptop GPU. See [evalu
 In Unity, open **Window > Package Manager**, select **+ > Add package from git URL**, and enter:
 
 ```text
-https://github.com/ErenAta16/Maverick-Unity.git#v1.0.0
+https://github.com/mcbu-xrlab/Maverick-Unity.git#v1.0.0
 ```
 
 The tag selects a fixed release. Omit `#v1.0.0` if you deliberately want the current default branch.
@@ -175,7 +175,7 @@ In XR, set `LocalModelServer.capFrameRate` to **0** and let the headset control 
 - [Troubleshooting and known issues](Documentation~/troubleshooting.md)
 - [Changelog](CHANGELOG.md)
 
-Report reproducible package problems in [GitHub Issues](https://github.com/ErenAta16/Maverick-Unity/issues). Model questions can also be raised in the [Hugging Face Community tab](https://huggingface.co/ErenAta00/Maverick-4B-Unity-XR-Agent-GGUF/discussions).
+Report reproducible package problems in [GitHub Issues](https://github.com/mcbu-xrlab/Maverick-Unity/issues). Model questions can also be raised in the [Hugging Face Community tab](https://huggingface.co/ErenAta00/Maverick-4B-Unity-XR-Agent-GGUF/discussions).
 
 ## License and credits
 

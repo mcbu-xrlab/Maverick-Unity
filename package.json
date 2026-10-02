@@ -21,11 +21,11 @@
     "name": "Eren Ata, MCBU XRLab",
     "url": "https://huggingface.co/ErenAta00"
   },
-  "documentationUrl": "https://github.com/ErenAta16/Maverick-Unity#readme",
-  "changelogUrl": "https://github.com/ErenAta16/Maverick-Unity/blob/main/CHANGELOG.md",
-  "licensesUrl": "https://github.com/ErenAta16/Maverick-Unity/blob/main/LICENSE.md",
+  "documentationUrl": "https://github.com/mcbu-xrlab/Maverick-Unity#readme",
+  "changelogUrl": "https://github.com/mcbu-xrlab/Maverick-Unity/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/mcbu-xrlab/Maverick-Unity/blob/main/LICENSE.md",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ErenAta16/Maverick-Unity.git"
+    "url": "https://github.com/mcbu-xrlab/Maverick-Unity.git"
   }
 }

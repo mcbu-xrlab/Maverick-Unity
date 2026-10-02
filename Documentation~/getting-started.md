@@ -7,7 +7,7 @@ A working installation needs three separate downloads: the Unity package, llama.
 Use **Window > Package Manager > + > Add package from git URL**:
 
 ```text
-https://github.com/ErenAta16/Maverick-Unity.git#v1.0.0
+https://github.com/mcbu-xrlab/Maverick-Unity.git#v1.0.0
 ```
 
 Alternatively, download the source archive, extract it outside your project's `Assets` folder, and use **Add package from disk** to select its `package.json`. Keep that extracted folder available: the local package depends on it.

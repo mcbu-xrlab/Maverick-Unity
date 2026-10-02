@@ -52,6 +52,6 @@ These issues describe the current code paths. They do not change the scope of th
 
 ## Report a problem
 
-Open a [GitHub issue](https://github.com/ErenAta16/Maverick-Unity/issues) with the package version, Unity version, operating system, GPU and VRAM, llama.cpp build/backend, model filename, and the smallest command and scene that reproduce the problem. Include the relevant log excerpt and whether it occurred in the Editor or a built application.
+Open a [GitHub issue](https://github.com/mcbu-xrlab/Maverick-Unity/issues) with the package version, Unity version, operating system, GPU and VRAM, llama.cpp build/backend, model filename, and the smallest command and scene that reproduce the problem. Include the relevant log excerpt and whether it occurred in the Editor or a built application.
 
 Review command logs before posting them. A minimal scene description is often more useful than a large project archive.
