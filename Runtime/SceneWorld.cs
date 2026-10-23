@@ -1,5 +1,8 @@
 // Scene state + tool semantics on real GameObjects. The rules match the simulator the model was trained on, so the
 // model's calls behave here exactly as they did in training.
+// Things resting on an object (directly or through others) travel with it: while it is held they ride along at their
+// offset (no position of their own), they follow it through teleport, and they land at the same offset when it is
+// placed or released. An object cannot be placed on or in something that rests on it.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -10,7 +13,7 @@ namespace SceneAgent
 {
     public class ToolError : Exception { public ToolError(string m) : base(m) { } }
 
-    public class SceneWorld : MonoBehaviour
+    public partial class SceneWorld : MonoBehaviour
     {
         public string playerRoom;
         public string gaze;
@@ -126,7 +129,19 @@ namespace SceneAgent
 
         // ------------------------------------------------------------------ tools
         static string S(Dictionary<string, object> a, string k) => a.TryGetValue(k, out var v) && v != null ? Convert.ToString(v, CultureInfo.InvariantCulture) : null;
-        static double D(Dictionary<string, object> a, string k, double def = 0) => a.TryGetValue(k, out var v) && v != null ? Convert.ToDouble(v, CultureInfo.InvariantCulture) : def;
+        double D(Dictionary<string, object> a, string k, double def = 0)
+        {
+            if (!a.TryGetValue(k, out var v)) return def;
+            // V1: an optional number written as null is not the default; sim_v1 runs float(None) on it
+            if (v == null && v1Order) throw new ToolError("bad arguments: float() argument must be a string or a real number, not 'NoneType'");
+            if (v == null) return def;
+            double d;
+            try { d = Convert.ToDouble(v, CultureInfo.InvariantCulture); }
+            catch (Exception e) when (e is FormatException || e is InvalidCastException || e is OverflowException)
+            { throw new ToolError(v1Order ? "bad arguments: " + PyFloatError(v) : $"bad arguments: '{k}' is not a number"); }
+            if (double.IsNaN(d) || double.IsInfinity(d)) throw new ToolError($"invalid number for '{k}'");
+            return d;
+        }
         static List<string> L(Dictionary<string, object> a, string k) => a.TryGetValue(k, out var v) && v is List<object> l ? l.Select(x => Convert.ToString(x)).ToList() : new List<string>();
 
         static string[] HandsFor(string hand) =>
@@ -136,18 +151,100 @@ namespace SceneAgent
         void HandSet(string h, string v) { if (h == "left") leftHand = v; else rightHand = v; }
         void FreeHand(SceneItem o) { if (leftHand == o.itemId) leftHand = null; if (rightHand == o.itemId) rightHand = null; }
 
-        void MoveTree(SceneItem o, double[] d)
+        // ------------------------------------------------------------------ what rests on what (cycle-safe)
+        static Dictionary<string, SceneItem> ById(List<SceneItem> all)
         {
-            for (int i = 0; i < 3; i++) o.pos[i] = SceneMath.Round(o.pos[i] + d[i], 3);
-            foreach (var c in Items) if (c.on == o.itemId && c.hasPos) MoveTree(c, d);
+            var d = new Dictionary<string, SceneItem>();
+            foreach (var x in all) if (x.itemId != null && !d.ContainsKey(x.itemId)) d[x.itemId] = x;
+            return d;
+        }
+
+        static SceneItem Under(SceneItem o, Dictionary<string, SceneItem> byId) =>
+            o.on != null && byId.TryGetValue(o.on, out var p) ? p : null;
+
+        /// <summary>The held object o rests on, directly or through others (o itself when held), or null.</summary>
+        static SceneItem HeldRoot(SceneItem o, Dictionary<string, SceneItem> byId)
+        {
+            var seen = new HashSet<string>();
+            while (o != null && seen.Add(o.itemId))
+            {
+                if (HandSlots.Contains(o.on)) return o;
+                o = Under(o, byId);
+            }
+            return null;
+        }
+
+        /// <summary>Held, or resting (directly or through others) on something held.</summary>
+        static bool InHand(SceneItem o, Dictionary<string, SceneItem> byId) => HeldRoot(o, byId) != null;
+
+        /// <summary>o stands on or in the object with this id, directly or through others.</summary>
+        static bool RestsOn(SceneItem o, string id, Dictionary<string, SceneItem> byId)
+        {
+            var seen = new HashSet<string>();
+            while (o != null && seen.Add(o.itemId))
+            {
+                if (o.on == id) return true;
+                o = Under(o, byId);
+            }
+            return false;
+        }
+
+        /// <summary>Everything resting on o, directly or through others, in hierarchy order.</summary>
+        static List<SceneItem> Subtree(SceneItem o, List<SceneItem> all)
+        {
+            var ids = new HashSet<string> { o.itemId };
+            for (bool grew = true; grew;)
+            {
+                grew = false;
+                foreach (var c in all)
+                    if (!ids.Contains(c.itemId) && c.on != null && ids.Contains(c.on)) { ids.Add(c.itemId); grew = true; }
+            }
+            return all.Where(c => c != o && ids.Contains(c.itemId)).ToList();
+        }
+
+        static double[] Offset(double[] a, double[] b) =>
+            new[] { SceneMath.Round(a[0] - b[0], 3), SceneMath.Round(a[1] - b[1], 3), SceneMath.Round(a[2] - b[2], 3) };
+
+        /// <summary>o has just been put down: what it carried lands at the same offsets.</summary>
+        void Land(SceneItem o, List<SceneItem> all)
+        {
+            foreach (var c in Subtree(o, all))
+                if (c.carry != null)
+                {
+                    c.pos = new[] { SceneMath.Round(o.pos[0] + c.carry[0], 3), SceneMath.Round(o.pos[1] + c.carry[1], 3),
+                                    SceneMath.Round(o.pos[2] + c.carry[2], 3) };
+                    c.carry = null; c.hasPos = true;
+                    Sync(c);
+                }
+        }
+
+        void MoveTree(SceneItem o, double[] d, List<SceneItem> all)
+        {
+            var stack = new Stack<SceneItem>();
+            stack.Push(o);
+            var seen = new HashSet<string>();
+            while (stack.Count > 0)
+            {
+                var x = stack.Pop();
+                if (!seen.Add(x.itemId)) continue;
+                for (int i = 0; i < 3; i++) x.pos[i] = SceneMath.Round(x.pos[i] + d[i], 3);
+                foreach (var c in all) if (c.on == x.itemId && c.hasPos) stack.Push(c);
+            }
         }
 
         /// <summary>Executes one call; returns the tool result object (serialised back to the model). Throws ToolError
         /// when the call is not possible here; ToolExecuted is raised only for accepted calls.</summary>
         public object Execute(string name, Dictionary<string, object> a)
         {
+            a = a ?? new Dictionary<string, object>();
             var result = ExecuteTool(name, a);
-            ToolExecuted?.Invoke(name, a, result);
+            // a failing handler (animation, sound, ...) must not turn an accepted call into an error
+            if (ToolExecuted != null)
+                foreach (Action<string, Dictionary<string, object>, object> h in ToolExecuted.GetInvocationList())
+                {
+                    try { h(name, a, result); }
+                    catch (Exception e) { Debug.LogException(e); }
+                }
             return result;
         }
 
@@ -157,6 +254,8 @@ namespace SceneAgent
             var missing = Required[name].Where(k => !a.ContainsKey(k) || a[k] == null).ToList();
             if (missing.Count > 0) throw new ToolError("missing arguments [" + string.Join(", ", missing.Select(m => $"'{m}'")) + "]");
             var ok = new Dictionary<string, object> { { "ok", true } };
+            var all = Items.ToList();
+            var byId = ById(all);
             switch (name)
             {
                 case "grab":
@@ -168,15 +267,30 @@ namespace SceneAgent
                     var hs = HandsFor(hand);
                     if (hs.Any(h => !string.IsNullOrEmpty(HandGet(h)))) throw new ToolError($"{hand} hand is not free");
                     foreach (var h in hs) HandSet(h, o.itemId);
+                    var carried = Subtree(o, all);
+                    double[] origin = o.hasPos ? o.pos : o.carry;
+                    foreach (var c in carried)
+                    {
+                        double[] cp = c.hasPos ? c.pos : c.carry;
+                        c.carry = cp != null && origin != null ? Offset(cp, origin) : new[] { 0.0, 0.0, 0.0 };
+                        c.hasPos = false;
+                    }
+                    o.carry = null;
                     o.on = hand == "both" ? "both_hands" : hand + "_hand"; o.hasPos = false;
-                    Sync(o); return ok;
+                    Sync(o);
+                    foreach (var c in carried) Sync(c);
+                    return ok;
                 }
                 case "release":
                 {
                     string hand = S(a, "hand");
                     var held = new SortedSet<string>(HandsFor(hand).Select(HandGet).Where(x => !string.IsNullOrEmpty(x)), StringComparer.Ordinal);
                     if (held.Count == 0) throw new ToolError($"nothing held in {hand} hand");
-                    foreach (var id in held) { var o = Get(id); FreeHand(o); o.on = "floor"; o.hasPos = true; o.pos = new[] { 0.0, 0.0, 0.6 }; Sync(o); }
+                    foreach (var id in held)
+                    {
+                        var o = Get(id); FreeHand(o); o.on = "floor"; o.hasPos = true; o.pos = new[] { 0.0, 0.0, 0.6 };
+                        Sync(o); Land(o, all);
+                    }
                     return ok;
                 }
                 case "place":
@@ -184,33 +298,46 @@ namespace SceneAgent
                     var o = Get(S(a, "object_id")); var t = Get(S(a, "target_id"));
                     string rel = S(a, "relation") ?? "on", orient = S(a, "orientation") ?? "default";
                     if (!CanGrasp(o)) throw new ToolError($"'{o.itemId}' cannot be carried");
-                    if (o.itemId == t.itemId || HandSlots.Contains(t.on)) throw new ToolError("invalid target");
+                    if (o.itemId == t.itemId || InHand(t, byId) || RestsOn(t, o.itemId, byId) || !t.hasPos) throw new ToolError("invalid target");
                     if (rel == "on" && !TryTop(t, out _)) throw new ToolError($"'{t.itemId}' is not a surface");
                     if (rel == "in" && !IsContainer(t)) throw new ToolError($"'{t.itemId}' is not a container");
                     if (rel == "in" && (t.state == "closed" || t.state == "locked")) throw new ToolError($"'{t.itemId}' is closed");
                     if (!new[] { "default", "upright", "horizontal", "vertical", "upside_down" }.Contains(orient)) throw new ToolError($"invalid orientation '{orient}'");
-                    FreeHand(o);
                     double top = rel == "on" && TryTop(t, out var th) ? th : 0.0;
-                    o.on = t.itemId; o.relation = rel; o.orientation = orient; o.hasPos = true;
-                    o.pos = new[] { t.pos[0], SceneMath.Round(t.pos[1] + top, 3), t.pos[2] };
-                    Sync(o); return ok;
+                    var nw = new[] { t.pos[0], SceneMath.Round(t.pos[1] + top, 3), t.pos[2] };
+                    double[] old = o.hasPos ? (double[])o.pos.Clone() : null, own = o.carry;
+                    o.carry = null;
+                    if (own != null)  // it was carried inside something held: what it carries is re-based on it
+                        foreach (var c in Subtree(o, all)) if (c.carry != null) c.carry = Offset(c.carry, own);
+                    FreeHand(o);
+                    o.on = t.itemId; o.relation = rel; o.orientation = orient; o.hasPos = true; o.pos = nw;
+                    Sync(o);
+                    if (old != null)  // not held: what rests on it moves by the same amount
+                        foreach (var c in Subtree(o, all))
+                            if (c.hasPos)
+                            {
+                                for (int i = 0; i < 3; i++) c.pos[i] = SceneMath.Round(c.pos[i] + nw[i] - old[i], 3);
+                                Sync(c);
+                            }
+                    Land(o, all);
+                    return ok;
                 }
                 case "move_by":
                 {
                     var o = Get(S(a, "object_id"));
-                    if (HandSlots.Contains(o.on) || IsFixed(o)) throw new ToolError($"'{o.itemId}' cannot be moved");
+                    if (InHand(o, byId) || IsFixed(o)) throw new ToolError($"'{o.itemId}' cannot be moved");
                     string dir = S(a, "direction"), unit = S(a, "unit");
                     if (dir == null || !Dir.ContainsKey(dir) || (unit != "m" && unit != "cm")) throw new ToolError("invalid direction or unit");
                     double dist = D(a, "distance") * (unit == "cm" ? 0.01 : 1.0);
                     var v = Dir[dir];
-                    MoveTree(o, new[] { v.x * dist, v.y * dist, v.z * dist });
+                    MoveTree(o, new[] { v.x * dist, v.y * dist, v.z * dist }, all);
                     foreach (var x in Items) Sync(x);
                     return ok;
                 }
                 case "rotate":
                 {
                     var o = Get(S(a, "object_id"));
-                    if (HandSlots.Contains(o.on) || IsFixed(o)) throw new ToolError($"'{o.itemId}' cannot be rotated");
+                    if (InHand(o, byId) || IsFixed(o)) throw new ToolError($"'{o.itemId}' cannot be rotated");
                     string axis = S(a, "axis") ?? "yaw";
                     double Wrap(double v) => SceneMath.Round(((v % 360) + 360) % 360, 3);
                     double deg = D(a, "degrees");
@@ -244,14 +371,14 @@ namespace SceneAgent
                 {
                     string loc = S(a, "location_id");
                     if (!rooms.Contains(loc)) throw new ToolError($"unknown location '{loc}'");
-                    foreach (var o in Items) if (HandSlots.Contains(o.on)) o.room = loc;
+                    foreach (var o in all) if (InHand(o, byId)) o.room = loc;
                     playerRoom = loc; return ok;
                 }
                 case "find_objects":
                 {
                     string label = S(a, "label"), color = S(a, "color"), room = S(a, "room");
-                    // hierarchy order, like the training simulator's world order
-                    return Items.Where(o => o.label == label && (color == null || o.color == color) && (room == null || o.room == room))
+                    // hierarchy order, like the training simulator's world order (V1: the order kept across reparenting)
+                    return (v1Order ? (IEnumerable<SceneItem>)OrderedItems() : Items).Where(o => o.label == label && (color == null || o.color == color) && (room == null || o.room == room))
                         .Select(o =>
                         {
                             var d = new Dictionary<string, object> { { "id", o.itemId }, { "label", o.label } };
@@ -272,10 +399,20 @@ namespace SceneAgent
         public void Sync(SceneItem o)
         {
             var tr = o.transform;
+            SceneItem root;
             if (HandSlots.Contains(o.on))
             {
                 var anchor = o.on == "left_hand" ? leftHandAnchor : rightHandAnchor;
                 if (anchor != null) { tr.SetParent(anchor, false); tr.localPosition = Vector3.zero; }
+            }
+            else if (!o.hasPos && o.carry != null && (root = HeldRoot(o, ById(Items.ToList()))) != null)
+            {
+                // carried inside something held: keep its offset from that object's bottom and ride along with it
+                var rt = root.transform;
+                tr.SetParent(transform, true);
+                var bottom = rt.position - new Vector3(0, rt.lossyScale.y / 2f, 0);
+                tr.position = bottom + new Vector3((float)o.carry[0], (float)o.carry[1] + tr.localScale.y / 2f, (float)o.carry[2]);
+                tr.SetParent(rt, true);
             }
             else
             {

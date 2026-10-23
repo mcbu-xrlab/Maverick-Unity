@@ -1,6 +1,7 @@
 // Plays a list of commands through the agent and writes a report: for testing your scene and for demos.
-//   one command per line; "// ..." comments; "#answer <item_id>" answers the pending question; "#look <item_id>|none"
-//   sets the gaze; "#wait <seconds>" pauses (not counted in any step's time).
+//   one command per line; "// ..." comments; "#answer <item_id>" answers the pending question (a step that starts no
+//   command is reported with a "not run" error); "#look <item_id>|none" sets the user's gaze (V1: also in the attention
+//   ledger once it has entries, as a gaze component would); "#wait <seconds>" pauses (not counted in any step's time).
 // In the Editor: assign a TextAsset and press Play. In a built game or batch run:
 //   Game.exe -sceneAgentScript commands.txt [-sceneAgentOut <dir>] [-sceneAgentShots]   (quits when done)
 // Report: <out>/report.json with every step's calls, results, answer, error, seconds and the scene signature.
@@ -32,6 +33,18 @@ namespace SceneAgent
             var a = Environment.GetCommandLineArgs();
             int i = Array.IndexOf(a, name);
             return i >= 0 && i + 1 < a.Length ? a[i + 1] : null;
+        }
+
+        // what a gaze component would do (they are paused while the script runs): set the V0 gaze, and in V1, where the
+        // scene takes the gaze from the attention ledger once it has entries, report or release the user's gaze there
+        static void Look(SceneAgentSession session, string id)
+        {
+            var world = session.world;
+            world.gaze = id;
+            bool v1 = session.agent != null && session.agent.schemaVersion == SchemaVersion.V1;
+            if (!v1 || !world.attention.Any) return;
+            if (id != null) world.ReportAttention("user", "gaze", id);
+            else world.ReleaseAttention("user", "gaze");
         }
 
         IEnumerator Start()
@@ -75,13 +88,18 @@ namespace SceneAgent
                     if (line.StartsWith("#look "))
                     {
                         string id = line.Substring(6).Trim();
-                        session.world.gaze = id == "none" ? null : id;
+                        Look(session, id == "none" ? null : id);
                         continue;
                     }
+                    var previous = session.LastResult;
                     if (line.StartsWith("#answer ")) yield return session.Answer(line.Substring(8).Trim());
                     else yield return session.Command(line);
 
-                    var r = session.LastResult;
+                    // a step that started no command (an answer with no question pending, or an id that is not one
+                    // of the choices) has no result of its own: report that, not the previous step's result again
+                    var r = ReferenceEquals(session.LastResult, previous)
+                        ? new AgentResult { error = "not run: the step started no command (for #answer: no question pending, or not one of the choices)" }
+                        : session.LastResult;
                     steps.Add(new Dictionary<string, object> {
                         { "step", line }, { "calls", r.turns.SelectMany(t => t.calls).Cast<object>().ToList() },
                         { "results", r.turns.SelectMany(t => t.results).Cast<object>().ToList() },

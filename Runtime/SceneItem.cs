@@ -16,6 +16,9 @@ namespace SceneAgent
         public bool hasPos = true;
         public double[] pos = new double[3];   // logical position (bottom of the object), metres
         public double yaw, pitch, roll;
+        /// <summary>While something it rests on is held: its offset from that object (it has no position of its own
+        /// then, hasPos is false). Set and cleared by SceneWorld.</summary>
+        [System.NonSerialized] public double[] carry;
 
         [Header("Affordances")]
         [Tooltip("Off: what this object can do comes from the model's catalogue of ~200 object types, looked up by its " +
@@ -30,6 +33,9 @@ namespace SceneAgent
         [Tooltip("Cannot be moved or rotated (doors, built-in appliances, ...).")]
         public bool isFixed;
         public bool isButton;
+        [Tooltip("V1: pressing this button can be undone (a toggle). Off: a press cannot be undone, so a command with a " +
+                 "press is not undoable.")]
+        public bool reversiblePress;
         [Tooltip("States set_state may put it in, e.g. on, off / open, closed. Empty: none.")]
         public string[] states = new string[0];
     }

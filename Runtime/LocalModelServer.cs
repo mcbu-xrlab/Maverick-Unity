@@ -31,6 +31,9 @@ namespace SceneAgent
         [Tooltip("Tokens of context. 4096 holds a room of about 60 objects plus a few turns.")]
         public int contextSize = 4096;
         public bool preferGpu = true;
+        [Tooltip("GPU layers to offload. 99 requests full offload; lower this for limited VRAM.")]
+        [Min(0)]
+        public int gpuLayers = 99;
         public int cpuThreads = 8;
         [Tooltip("--cache-ram 0: llama.cpp's host prompt cache (8 GB by default) filled the machine's RAM.")]
         public string extraArgs = "--cache-ram 0";
@@ -112,7 +115,7 @@ namespace SceneAgent
             if (preferGpu)
             {
                 status = "loading the model on the GPU…";
-                yield return StartAndWait(exe, common + " -ngl 99", cpuOnly: false);
+                yield return StartAndWait(exe, common + $" -ngl {Math.Max(0, gpuLayers)}", cpuOnly: false);
                 if (mode == Mode.Gpu) yield break;
                 Stop();
                 SetMode(Mode.Starting);
