@@ -16,7 +16,15 @@ The [schema 1.1 guide](Documentation~/schema-1-1.md) explains the new format and
 
 ## Demo
 
-[![Looping demo of Maverick interacting with Unity scenes](Documentation~/demo.webp)](https://github.com/mcbu-xrlab/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4)
+### Maverick 1.1
+
+A technician works in a three-room house and a remote expert helps by call. Here the expert corrects the model (“No, the other one.”): it undoes its last action and does the same thing to the other lamp. The [full demo](https://github.com/mcbu-xrlab/Maverick-Unity/releases/download/v1.1.0/maverick-1-1-demo.mp4) (1 min 44 s) shows nine commands, including a fetch from another room, a two-step plan, and an undo that is refused because a button press cannot be reversed. It was recorded live on a laptop with a 4 GB GPU. The script was rehearsed, and the expert's voice is text-to-speech.
+
+[![Looping demo of Maverick 1.1 undoing a command and correcting it](Documentation~/demo-1-1.webp)](https://github.com/mcbu-xrlab/Maverick-Unity/releases/download/v1.1.0/maverick-1-1-demo.mp4)
+
+### Maverick 1.0
+
+[![Looping demo of Maverick 1.0 interacting with Unity scenes](Documentation~/demo.webp)](https://github.com/mcbu-xrlab/Maverick-Unity/releases/download/v1.0.0/maverick-demo.mp4)
 
 ## What is included
 
