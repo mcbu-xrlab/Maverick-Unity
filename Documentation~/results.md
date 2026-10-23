@@ -1,6 +1,6 @@
 # Training and evaluation
 
-This page records the results published with Maverick-4B-Unity-XR-Agent. Sources are the [model card](https://huggingface.co/ErenAta00/Maverick-4B-Unity-XR-Agent-GGUF) and [project article](https://huggingface.co/blog/ErenAta00/maverick-4b-unity-xr-agent). Moving the package to GitHub does not constitute a new benchmark run.
+This page records the results published with Maverick 1.0 (Maverick-4B-Unity-XR-Agent). Sources are its [model card](https://huggingface.co/ErenAta00/Maverick-4B-Unity-XR-Agent) and [project article](https://huggingface.co/blog/ErenAta00/maverick-4b-unity-xr-agent). The results of Maverick 1.1 are on its [model card](https://huggingface.co/ErenAta00/Maverick-4B-Unity-XR-Agent-1.1) and in the [article on 1.1](https://huggingface.co/blog/ErenAta00/maverick-1-1-undo-pointing-other-rooms). Moving the package to GitHub does not constitute a new benchmark run.
 
 ## Training
 

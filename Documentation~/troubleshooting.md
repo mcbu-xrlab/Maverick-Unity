@@ -38,14 +38,14 @@ If an object snaps back after an unrelated command, check whether another system
 
 ## Known implementation issues
 
-The initial GitHub release preserves the runtime code from the published Unity package. The following limitations are documented rather than presented as fixes:
+The following limitations remain in version 1.1.0. They are documented rather than presented as fixes:
 
-- **Argument validation is incomplete.** The output check does not enforce all required arguments or numeric types. Missing required arguments are rejected later by SceneWorld, but a value such as `distance: "abc"` can pass the check and throw during numeric conversion. The execution loop catches `ToolError`, not every possible exception. A valid call followed by a truncated call can also pass the checker because complete blocks are checked without rejecting the trailing fragment.
+- **The output check has one gap.** Since 1.0.1 it rejects missing required arguments, arguments of the wrong type and numbers that are not finite, and an exception inside a tool becomes a failed tool result. A valid call followed by a truncated call can still pass, because complete blocks are checked and the trailing fragment is not rejected.
 - **Placement orientation is metadata only.** `place` records values such as `upside_down`, but `Sync()` derives visual rotation from pitch, yaw, and roll without applying that metadata.
-- **External object movement is not tracked continuously.** Initial Transform values can be imported at startup; later physics or XR interactions need to update the logical fields explicitly.
-- **Commands are not queued.** The built-in chat checks `Busy`, but the public session methods do not prevent overlapping coroutine calls. Custom input sources need a shared admission or queue policy.
-- **The scene snapshot stays fixed within one command.** Tool results are added to the conversation, but the full scene is not rebuilt after each action or room change.
-- **The turn limit can end without a final reply.** The default is four model turns. Inspect the result's tool calls and errors when no final text is present; silence is not proof that nothing happened.
+- **External object movement is only tracked in schema 1.1.** Initial Transform values can be imported at startup. In `V1`, `SceneWorld.ApplyExternalChange` and `syncFromTransforms` report later changes. In `V0`, physics or XR interactions need to update the logical fields explicitly.
+- **Commands are not queued.** While `Busy` is true, `Command` and `Answer` do not start a second run and say so through `Line`. Input that arrives in the meantime is dropped, so a custom input source needs its own queue if it must keep it.
+- **The scene snapshot stays fixed within one command.** Tool results are added to the conversation, but the full scene is not rebuilt after each action or room change. In `V1`, the result of a `teleport` lists the objects of the new room.
+- **The turn limit can end without a final reply.** The default is four model turns (six in `V1`). `AgentResult.turnLimitReached` tells you when that happened. Inspect the result's tool calls and errors when no final text is present; silence is not proof that nothing happened.
 - **Rendering settings are not restored automatically.** Entering GPU mode can change VSync and the target frame rate. Applications that stop the server or switch scenes may need to restore their own settings.
 
 These issues describe the current code paths. They do not change the scope of the historical test results, which covered the inputs listed in the published evaluation.

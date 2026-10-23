@@ -2,6 +2,8 @@
 
 `SceneAgentSession` is the entry point for an application's input and interface. It submits commands, tracks pending clarification questions, and exposes completion events. `SceneWorld` owns the logical scene state and executes tools.
 
+This page covers the default format (`V0`). Undo, attention and several people (`V1`) are described in the [schema 1.1 guide](schema-1-1.md).
+
 ## Component reference
 
 | Component | Responsibility | Main members |
@@ -10,7 +12,7 @@
 | `SceneWorld` | Builds the scene description and executes tools | `BuildSceneJson`, `Execute`, `ToolExecuted`, `playerRoom`, `rooms` |
 | `SceneAgent` | Calls the model and feeds back tool results | `Run`, `maxTurns`, `fallbackDecoding`, `guardSubstitutes` |
 | `LocalModelServer` | Starts, monitors startup, and stops llama.cpp | `Launch`, `Stop`, `Ready`, `Failed`, `LogPath` |
-| `SceneAgentSession` | Handles commands and clarification replies | `Command`, `Answer`, `Busy`, `Candidates`, `Line`, `Finished` |
+| `SceneAgentSession` | Handles commands and clarification replies | `Command`, `Answer`, `Cancel`, `Busy`, `Candidates`, `Line`, `Finished` |
 | `SceneAgentGaze` | Sets a mouse or camera-center gaze target | `source`, `viewCamera`, `maxDistance` |
 | `SceneAgentChatBox` | Provides a desktop test interface | `toggleKey`, `visibleLines` |
 | `SceneAgentScriptRunner` | Runs command files and writes reports | `script`, `outputDirectory`, `screenshots` |
@@ -19,7 +21,7 @@ The runtime and editor code are separate assemblies. There is no dependency on a
 
 ## Submit commands and receive results
 
-Use one session for an interaction flow. The methods are coroutines and must be started on Unity's main thread. Check `Busy` before accepting another command; the session does not provide a queue or reject overlapping calls on its own.
+Use one session for an interaction flow. The methods are coroutines and must be started on Unity's main thread. While `Busy` is true, `Command` and `Answer` do not start a second run; they report through `Line` that the previous command is still running. The session does not queue input, so decide in your own input code whether to wait or to drop what arrives in the meantime. To stop a running command, call `Cancel` instead of `StopCoroutine`.
 
 ```csharp
 using SceneAgent;
@@ -88,7 +90,7 @@ SceneWorld discovers items under its transform and under external hand anchors a
 
 ## Keep scene state current
 
-When `initFromTransforms` is enabled, initial positions and rotations are read at startup. Later commands read the stored `SceneItem` fields. If physics, an XR grab system, or your own code changes an object, update its logical position, rotation, room, support, and hand ownership as appropriate.
+When `initFromTransforms` is enabled, initial positions and rotations are read at startup. Later commands read the stored `SceneItem` fields. If physics, an XR grab system, or your own code changes an object, update its logical position, rotation, room, support, and hand ownership as appropriate. With schema 1.1, route such changes through `SceneWorld.ApplyExternalChange` or turn on `syncFromTransforms`, so that the model and undo both see them.
 
 Logical positions describe the bottom of an object in room-local meters. The default visual synchronization estimates the center offset using half of `transform.localScale.y`; custom meshes, pivots, and parent scales may require a different placement implementation.
 
